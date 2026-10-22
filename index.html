@@ -101,6 +101,10 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);lin
 .tile.fall{transition:transform .9s cubic-bezier(.5,0,.9,.6),opacity .9s;transform:translateY(160%) rotate(var(--fr,25deg));opacity:0;pointer-events:none}
 .board.spinning{transition:none}
 .board .tile.sel{z-index:4}
+.board.fading .tile .in,.board.fading .tile{transition:opacity 2.6s ease-in,box-shadow 2.6s,background 2.6s}
+.board.fading{transition:background 2.6s}
+.board.fading.dim{background:#05070c}
+.board.fading.dim .tile .in{opacity:0}
 .tile.hit{animation:hit .5s}
 .tile.win.reveal{box-shadow:0 0 0 2px #fff,inset 0 0 0 5px #34c759;animation:reveal .6s 3}
 @keyframes reveal{50%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9px #34c759}}
@@ -234,10 +238,11 @@ const P={
   light:range('light',[0,1,2,3,5,6,7,8]), road:['img/light4.jpg'],
   moto:range('moto',[0,1,2,3,4,5,6,7,8]), bike:range('bike',[0,1,2,3,4,5,6,7,8]),
   hyd:range('hyd',[0,1,2,3,4,5,6,7,8]), misc:range('misc',[0,1,2,3,4,5,6,7,8]),
-  cat:range('ani',[0,1,2]), dog:range('ani',[3,4,5]), duck:range('ani',[6,7,8]),
+  cat:[...range('ani',[0,1,2]),...range('anA',[0,1,2]),...range('anB',[0,1,2])], dog:[...range('ani',[3,4,5]),...range('anA',[3,4,5]),...range('anB',[3,4,5])],
+  duck:[...range('ani',[6,7,8]),...range('anA',[6,7,8]),...range('anB',[6,8])], rubber:['img/anB7.jpg'],
   robot:range('robot',[1,2,3,4,5,6,7]), ppl:range('ppl',[0,1,2,3,4,5,6,7,8])
 };
-[...Object.values(P).flat(),'img/bus.jpg','img/road.jpg','img/grass.jpg','img/market.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
+[...Object.values(P).flat(),'img/bus.jpg','img/road.jpg','img/grass.jpg','img/market.jpg','img/crowd.jpg','img/beach.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
 
 let tiles=[],n=3,level=0,L=null,S={timers:[]},timeLeft=1,timeMax=1,running=false,locked=false,ended=false;
 let mistakes=0,sus=0,tStart=0,score=0,levelFails=0,stat={base:0,speed:0,clean:0},secs=0,reported=false;
@@ -288,11 +293,22 @@ function fail(text,stay){mistakes++;levelFails++;say(text,'bad');shake();if(stay
 function prog(){$('#plabel').textContent=`${level+1} / ${LEVELS.length}`;[...$('#pseg').children].forEach((i,k)=>i.className=k<level?'done':k===level?'now':'')}
 function startLevel(i){
   S.timers.forEach(clearTimeout);S={timers:[]};
-  board.onpointermove=board.onpointerdown=null;board.style.transform='';board.style.touchAction='';board.style.removeProperty('--bl');board.classList.remove('blurry','spinning');
+  board.onpointermove=board.onpointerdown=null;board.style.transform='';board.style.touchAction='';board.style.removeProperty('--bl');board.classList.remove('blurry','spinning','fading','dim');
   level=i;L=LEVELS[i];board.hidden=false;run.hidden=true;endEl.hidden=true;
   goBtn.disabled=false;locked=false;running=true;timeMax=timeLeft=L.time;
   say(t(`Проверка ${i+1} из ${LEVELS.length}.`,`Check ${i+1} of ${LEVELS.length}.`));L.setup();updateGo();prog();
 }
+
+/* hidden object: одна большая фотография, один спрятанный объект R (доли кадра) */
+function HO(o){return{time:o.time||30,hint:o.hint,
+  setup(){setHead(PICKSQ(),o.word(),o.sub());build(o.n,null,{scene:o.img});const R=o.R,n=o.n,A=R.w*R.h;
+    tiles.forEach(x=>{const r=Math.floor(x.cell/n),c=x.cell%n;
+      const ov=Math.max(0,Math.min((c+1)/n,R.x+R.w)-Math.max(c/n,R.x))*Math.max(0,Math.min((r+1)/n,R.y+R.h)-Math.max(r/n,R.y));
+      x.share=ov/A;x.c={target:x.share>=.25}})},
+  verify(){const miss=tiles.filter(x=>x.share>=.25&&!x.sel),extra=tiles.filter(x=>x.sel&&x.share===0);
+    if(!miss.length&&!extra.length)return win(o.win());
+    if(!miss.length)return fail(o.extra());
+    miss.forEach(x=>x.el.classList.add('reveal'));fail(o.miss())}}}
 const SKIP=()=>t('Если их нет, нажмите «Пропустить».','If there are none, click skip.');
 const PICK=()=>t('Выберите все изображения, на которых есть','Select all images with');
 const PICKSQ=()=>t('Выберите все квадраты, на которых есть','Select all squares with');
@@ -364,7 +380,7 @@ const LEVELS=[
 { // 7. загрузка на 2G
   time:20,hint:()=>t('Можно ждать, пока прогрузится. Но бонус за скорость тает.','You can wait for it to load. But the speed bonus melts.'),
   setup(){setHead(PICK(),t('собаки','dogs'),t('Изображения загружаются на скорости 2G.','Images are loading at 2G speed.'));
-    build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>P[k].map(s=>ph(s,k==='dog',{kind:k})))));
+    build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>shuffle([...P[k]]).slice(0,3).map(s=>ph(s,k==='dog',{kind:k})))));
     board.classList.add('blurry');S.bl=26;board.style.setProperty('--bl',S.bl+'px')},
   tick(dt){S.bl=Math.max(0,S.bl-dt*2.6);board.style.setProperty('--bl',S.bl.toFixed(1)+'px');if(!S.bl)board.classList.remove('blurry')},
   failMsg:()=>t('Это была не собака. Это было размытое пятно.','That was not a dog. That was a blurry blob.'),
@@ -374,7 +390,7 @@ const LEVELS=[
   time:30,hint:()=>t('Смотрите на заголовок. Он живёт своей жизнью.','Watch the header. It has a mind of its own.'),
   setup(){S.W=[[()=>t('кошки','cats'),'cat'],[()=>t('собаки','dogs'),'dog'],[()=>t('утки','ducks'),'duck']];S.wi=0;S.acc=0;
     setHead(PICK(),S.W[0][0](),t('Задание может обновиться без предупреждения.','The task may change without notice.'));
-    build(3,shuffle(S.W.flatMap(([,k])=>P[k].map(s=>ph(s,false,{kind:k})))))},
+    build(3,shuffle(S.W.flatMap(([,k])=>shuffle([...P[k]]).slice(0,3).map(s=>ph(s,false,{kind:k})))))},
   tick(dt){S.acc+=dt;if(S.acc>4.4){S.acc=0;let k;do{k=Math.random()*3|0}while(k===S.wi);S.wi=k;
     setHead(PICK(),S.W[k][0](),t('Задание может обновиться без предупреждения.','The task may change without notice.'));
     say(rnd(t(['Мы передумали.','Новая задача.','Шутка. Вот теперь точно.','Отдел капчи решил иначе.'],['We changed our mind.','New task.','Just kidding. This one for real.','The captcha department disagrees.'])))}},
@@ -392,17 +408,12 @@ const LEVELS=[
   winMsg:()=>t('Глаз как у ястреба. У человеческого ястреба.','Eyes like a hawk. A human hawk.')
 },
 { // 10. кот на рынке (hidden object)
-  time:30,hint:()=>t('Котики любят прятаться внизу, под ящиками.','Cats like to hide low, under the crates.'),
-  setup(){setHead(PICKSQ(),t('кот','a cat'),t('Он один. И он не хочет, чтобы его нашли.','There is only one. And he does not want to be found.'));
-    build(5,null,{scene:'img/market.jpg'});const R={x:.128*5,y:.785*5,w:.104*5,h:.073*5};S.core=20;
-    tiles.forEach(x=>{const r=Math.floor(x.cell/5),c=x.cell%5;
-      x.cov=Math.max(0,Math.min(c+1,R.x+R.w)-Math.max(c,R.x))*Math.max(0,Math.min(r+1,R.y+R.h)-Math.max(r,R.y))})},
-  verify(){const core=tiles[S.core],extra=tiles.filter(x=>x.sel&&x.cov===0);
-    if(core.sel&&!extra.length)return win(t('Нашёлся! Кот недоволен, но ему всё равно.','Found him! The cat is unimpressed.'));
-    if(extra.length&&core.sel)return fail(t('Кот там, да. Но в остальных квадратах только овощи.','Yes, the cat is there. But the other squares are just vegetables.'));
-    core.el.classList.add('reveal');
-    fail(t('Кот был здесь, в подсвеченном квадрате. Запомните его.','The cat was in the highlighted square. Remember him.'))}
-},
+...HO({n:5,img:'img/market.jpg',R:{x:.128,y:.785,w:.104,h:.073},time:30,
+  hint:()=>t('Котики любят прятаться внизу, под ящиками.','Cats like to hide low, under the crates.'),
+  word:()=>t('кот','a cat'),sub:()=>t('Он один. И он не хочет, чтобы его нашли.','There is only one. And he does not want to be found.'),
+  win:()=>t('Нашёлся! Кот недоволен, но ему всё равно.','Found him! The cat is unimpressed.'),
+  extra:()=>t('Кот там, да. Но в остальных квадратах только овощи.','Yes, the cat is there. But the other squares are just vegetables.'),
+  miss:()=>t('Кот был в подсвеченном квадрате. Запомните его.','The cat was in the highlighted square. Remember him.')})},
 { // 11. фонарик
   time:25,hint:()=>t('Водите курсором или пальцем по капче — это фонарик.','Move your cursor or finger over the captcha — it is a flashlight.'),
   setup(){setHead(t('Свет отключили. Найдите все','The power is out. Find all'),t('пожарные гидранты','fire hydrants'),t('Водите курсором или пальцем — это фонарик.','Move your cursor or finger — it is a flashlight.'));
@@ -431,15 +442,22 @@ const LEVELS=[
     else{sus++;score=Math.max(0,score-10);bump();x.el.classList.add('miss');say(rnd(t(['Мимо. Он был в соседнем.','Он уже уехал.','Почти.','Это асфальт.'],['Missed. It was next door.','It already left.','Almost.','That is asphalt.'])))}
     return true}
 },
-{ // 13. карусель
+{ // 13. робот в толпе (hidden object)
+...HO({n:6,img:'img/crowd.jpg',R:{x:.683,y:.488,w:.112,h:.224},time:30,
+  hint:()=>t('Ищите того, кто не промок под дождём.','Look for the one who is not getting wet.'),
+  word:()=>t('робот','a robot'),sub:()=>t('Кроме вас. Он один, и он прикидывается человеком.','Besides you. There is one, pretending to be human.'),
+  win:()=>t('Попался. Говорит, что просто вышел за хлебом.','Busted. He says he just went out for bread.'),
+  extra:()=>t('Робот найден, но вы отметили и людей. Они обиделись.','Robot found, but you also marked people. They are offended.'),
+  miss:()=>t('Робот был там, где подсвечено. Он хорошо маскируется.','The robot was in the highlighted squares. Good disguise.')})},
+{ // 14. карусель
   time:25,hint:()=>t('Капча крутится, а квадраты нажимаются как обычно.','The captcha spins, but the squares click as usual.'),
   setup(){setHead(PICK(),t('кошки','cats'),t('Капча немного закружилась.','The captcha got a little dizzy.'));
-    build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>P[k].map(s=>ph(s,k==='cat',{kind:k})))));S.ang=0;S.vs=28;board.classList.add('spinning')},
+    build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>shuffle([...P[k]]).slice(0,3).map(s=>ph(s,k==='cat',{kind:k})))));S.ang=0;S.vs=28;board.classList.add('spinning')},
   tick(dt){S.vs=Math.min(120,S.vs+dt*5);S.ang=(S.ang+S.vs*dt)%360;board.style.transform=`scale(.7) rotate(${S.ang}deg)`},
   failMsg:()=>t('Голова закружилась? Это не кошка.','Dizzy? That is not a cat.'),
   winMsg:()=>t('Все кошки пойманы на лету.','All cats caught mid-spin.')
 },
-{ // 14. роботы: ловим людей
+{ // 15. роботы: ловим людей
   time:22,goLabel:()=>t('Ловите','Catch them'),
   hint:()=>t('Жмите на квадрат, пока в нём человек. Робот в куртке не считается.','Tap a square while a person is in it. A robot in a jacket does not count.'),
   setup(){setHead(PICK(),t('люди','people'),t('Они появляются на секунду. Поймайте троих.','They show up for a second. Catch three.'));
@@ -459,19 +477,36 @@ const LEVELS=[
     return true},
   verify(){say(t('Сначала поймайте троих.','Catch three first.'))}
 },
-{ // 15. обвал
+{ // 16. свет гаснет: по памяти в темноте
+  time:25,hint:()=>t('Запоминайте, где велосипеды, пока горит свет. Потом жмите в темноту.','Memorize where the bicycles are while the light is on. Then tap the darkness.'),
+  setup(){setHead(t('Запомните, где','Remember where the'),t('велосипеды','bicycles are'),t('Свет сейчас погаснет.','The light is about to go out.'));
+    build(4,deal(16,P.bike,4,[P.moto,P.misc]));S.pause=1;goBtn.disabled=true;board.classList.add('fading');say(t('Запоминайте…','Memorize…'));
+    later(()=>{board.classList.add('dim');say(t('Свет гаснет…','The light is fading…'))},2600);
+    later(()=>{S.pause=0;goBtn.disabled=false;setHead(t('Выберите в темноте все','In the dark, select all'),t('велосипеды','bicycles'),t('Ничего не видно. Это нормально.','You cannot see anything. That is normal.'));say(t('Жмите по памяти.','Tap from memory.'))},5400)},
+  verify(){locked=true;board.classList.remove('dim');later(()=>{locked=false;stdVerify()},900)},
+  failMsg:()=>t('В темноте все велосипеды похожи на мотоциклы.','In the dark every bicycle looks like a motorcycle.'),
+  winMsg:()=>t('Нашли наощупь. Почти как летучая мышь.','Found them by feel. Almost like a bat.')
+},
+{ // 17. обвал
   time:25,hint:()=>t('Отмеченные квадраты не падают. Спасайте уток первыми.','Selected squares do not fall. Save the ducks first.'),
   setup(){setHead(PICK(),t('утки','ducks'),t('Капча разваливается. Отмеченное не упадёт.','The captcha is falling apart. Selected squares stay.'));
-    build(3,deal(9,P.duck,3,[P.cat,P.dog,P.misc]));S.acc=-1.2;S.gap=1.25},
+    const dc=deal(9,P.duck,3,[P.cat,P.dog,P.misc]);dc[dc.findIndex(x=>!x.target)]=ph(P.rubber[0]);build(3,shuffle(dc));S.acc=-1.2;S.gap=1.25},
   tick(dt){S.acc+=dt;if(S.acc<S.gap)return;S.acc=0;S.gap=Math.max(.6,S.gap*.93);
     const c=tiles.filter(x=>!x.sel&&!x.gone);if(!c.length)return;const x=rnd(c);x.gone=1;
     x.el.style.setProperty('--fr',(Math.random()*60-30)+'deg');x.el.classList.add('fall');
     if(x.c.target)fail(t('Утка упала. Вообще-то они должны летать.','A duck fell. Technically they should fly.'))},
   click(x){return !!x.gone},
-  failMsg:()=>t('Спасли что-то не то.','You saved the wrong thing.'),
+  failMsg:w=>w.some(x=>x.c.src===P.rubber[0])?t('Резиновая утка — не утка. Она даже не крякает.','A rubber duck is not a duck. It does not even quack.'):t('Спасли что-то не то.','You saved the wrong thing.'),
   winMsg:()=>t('Утки спасены. Остальное не жалко.','Ducks saved. Nobody will miss the rest.')
 },
-{ // 16. муравьи: ползают по траве
+{ // 18. утка на пляже (hidden object)
+...HO({n:6,img:'img/beach.jpg',R:{x:.473,y:.462,w:.075,h:.073},time:35,
+  hint:()=>t('Утка стоит, а не загорает. И она на нескольких квадратах.','The duck is standing, not sunbathing. And it covers several squares.'),
+  word:()=>t('утка','a duck'),sub:()=>t('Да, на пляже. Не спрашивайте.','Yes, on the beach. Do not ask.'),
+  win:()=>t('Утка найдена. Она просто пришла позагорать.','Duck found. It just came to get a tan.'),
+  extra:()=>t('Утку нашли, но лишние квадраты — это просто полотенца.','Duck found, but the extra squares are just towels.'),
+  miss:()=>t('Утка попала сразу на несколько квадратов. Они подсвечены.','The duck covers several squares. They are highlighted.')})},
+{ // 19. муравьи: ползают по траве
   time:30,hint:()=>t('Ищите то, что шевелится. Муравьёв двое, божьи коровки не в счёт.','Look for what moves. There are two ants; ladybugs do not count.'),
   setup(){setHead(PICKSQ(),t('муравьи','ants'),t('Их двое, и они ползают. Божьи коровки не считаются.','There are two, and they crawl. Ladybugs do not count.'));
     build(5,null,{scene:'img/grass.jpg'});
@@ -492,7 +527,7 @@ const LEVELS=[
     fail(extra?t(`Лишний квадрат. Муравьи были там, где подсвечено.`,`Extra square selected. The ants were in the highlighted squares.`)
       :t(`Найдено ${found} из 2. Остальные подсвечены.`,`Found ${found} of 2. The rest are highlighted.`))}
 },
-{ // 17. финал
+{ // 20. финал
   time:40,hint:()=>t('Галочка убегает не вечно. А потом — люди иногда ошибаются.','The checkbox cannot run forever. And then: humans make mistakes.'),
   setup(){S.phaseA=1;S.esc=6;S.lastJ=0;board.hidden=true;run.hidden=false;rbox.classList.remove('spin','done');
     setHead(t('Последний шаг. Отметьте','Last step. Check'),t('«Я не робот»','"I\'m not a robot"'),t('Просто нажмите на галочку.','Just click the checkbox.'));goBtn.disabled=true;
