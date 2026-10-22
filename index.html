@@ -377,14 +377,25 @@ const LEVELS=[
     else{sus++;score=Math.max(0,score-10);bump();x.el.classList.add('miss');say(rnd(t(['Мимо. Он был в соседнем.','Он уже уехал.','Почти.','Это асфальт.'],['Missed. It was next door.','It already left.','Almost.','That is asphalt.'])))}
     return true}
 },
-{ // 8. роботы
-  time:16,hint:()=>t('Внимательно перечитайте нижнюю строчку задания.','Read the bottom line of the task again. Carefully.'),
-  setup(){setHead(PICK(),t('люди','people'),SKIP());
-    const r=shuffle([...P.robot]);build(3,[...Array(9)].map((_,i)=>ph(r[i%r.length])));S.acc=0},
-  tick(dt){S.acc+=dt;if(S.acc>1.15){S.acc=0;const x=rnd(tiles);if(x.flash)return;x.flash=1;const keep=x.c;
-    setContent(x,ph(rnd(P.ppl)));later(()=>{setContent(x,keep);x.flash=0},420)}},
-  verify(){if(tiles.some(x=>x.sel))fail(t('Это был робот. Они научились надевать куртки.','That was a robot. They learned to wear jackets.'));
-    else win(t('Верно, людей тут нет. Кроме вас. Надеемся.','Correct, no people here. Except you. We hope.'))}
+{ // 8. роботы: ловим людей
+  time:22,goLabel:()=>t('Ловите','Catch them'),
+  hint:()=>t('Жмите на квадрат, пока в нём человек. Робот в куртке не считается.','Tap a square while a person is in it. A robot in a jacket does not count.'),
+  setup(){setHead(PICK(),t('люди','people'),t('Они появляются на секунду. Поймайте троих.','They show up for a second. Catch three.'));
+    const r=shuffle([...P.robot]);build(3,[...Array(9)].map((_,i)=>ph(r[i%r.length])));S.acc=.6;S.caught=0;S.gap=1.25;S.show=1100;goBtn.disabled=true},
+  tick(dt){S.acc+=dt;if(S.acc<S.gap)return;S.acc=0;
+    const free=tiles.filter(x=>!x.flash&&!x.caught);if(!free.length)return;const x=rnd(free);x.flash=1;const keep=x.c;
+    setContent(x,ph(rnd(P.ppl),true),true);x.back=later(()=>{if(x.caught)return;setContent(x,keep,true);x.flash=0},S.show)},
+  click(x){
+    if(x.caught)return true;
+    x.el.classList.remove('hit','miss');void x.el.offsetWidth;
+    if(x.flash){clearTimeout(x.back);x.caught=1;x.flash=0;setSel(x,true);x.el.classList.add('hit');S.caught++;
+      S.gap*=.85;S.show*=.85;
+      if(S.caught>=3)win(t('Все трое пойманы. Роботы делают вид, что не при делах.','All three caught. The robots pretend they had nothing to do with it.'));
+      else say(t(`Поймали! ${S.caught} из 3. Остальные стали осторожнее.`,`Caught one! ${S.caught} of 3. The rest got careful.`),'ok')}
+    else{sus++;score=Math.max(0,score-10);bump();x.el.classList.add('miss');
+      say(rnd(t(['Это робот. Он просто стоит.','Робот. Даже без куртки.','Мимо, это железо.'],['That is a robot. It is just standing there.','Robot. Not even a jacket.','Missed, that is hardware.'])))}
+    return true},
+  verify(){say(t('Сначала поймайте троих.','Catch three first.'))}
 },
 { // 9. муравьи
   time:25,hint:()=>t('Их ровно два. Божьи коровки не считаются.','There are exactly two. Ladybugs do not count.'),
