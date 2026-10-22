@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Captcha</title>
+<meta name="description" content="Prove you're human. The captcha lies.">
+<meta property="og:title" content="Captcha">
+<meta property="og:description" content="Prove you're human. The captcha lies.">
+<meta property="og:image" content="https://plairpro.github.io/captcha/cover.jpg">
+<meta property="og:image:width" content="720">
+<meta property="og:image:height" content="1280">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://plairpro.github.io/captcha/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://plairpro.github.io/captcha/cover.jpg">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="plair-verify" content="plair-f5c067704585">
 <script src="https://plair.pro/sdk.js"></script>
@@ -224,7 +234,7 @@ let tiles=[],n=3,level=0,L=null,S={timers:[]},timeLeft=1,timeMax=1,running=false
 let mistakes=0,sus=0,tStart=0,score=0,levelFails=0,stat={base:0,speed:0,clean:0},secs=0,reported=false;
 function bump(){const e=$('#pscore');e.textContent=score;e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
 
-const ph=(src,target=false,extra={})=>({src,target,flip:Math.random()<.35,...extra});
+const ph=(src,target=false,extra={})=>({src,target,flip:!src.includes('misc')&&Math.random()<.35,...extra});
 function pick(pool,k,used){const a=shuffle(pool.filter(s=>!used.has(s))).slice(0,k);a.forEach(s=>used.add(s));return a}
 function deal(N,pool,k,decoys){const used=new Set();const out=pick(pool,k,used).map(s=>ph(s,true));
   const d=pick(decoys.flat(),N-k,used);d.forEach(s=>out.push(ph(s,false)));while(out.length<N)out.push(ph(rnd(decoys.flat())));return shuffle(out)}
