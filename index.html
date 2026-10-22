@@ -1,3 +1,8 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Captcha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="plair-verify" content="plair-f5c067704585">
@@ -16,6 +21,8 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
 html,body{height:100%}
 body{
   margin:0;background:var(--desk);color:var(--desk-ink);font-family:var(--body);
@@ -132,8 +139,9 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);lin
 .hide{display:none!important}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
 </style>
+</head>
+<body>
 
-<div class="lang" role="group" aria-label="Language"><button id="lRu" aria-pressed="true">RU</button><button id="lEn" aria-pressed="false">EN</button></div>
 
 <div class="top">
   <p class="chal hide" id="chal"></p>
@@ -180,7 +188,7 @@ const range=(k,ids)=>ids.map(i=>`img/${k}${i}.jpg`);
 
 /* ---------- язык ---------- */
 let lang='ru';
-try{lang=localStorage.getItem('nr-lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en')}catch(e){lang=(navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'}
+lang=(navigator.languages&&navigator.languages[0]||navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en';
 const t=(ru,en)=>lang==='en'?en:ru;
 function applyStatic(){
   document.documentElement.lang=lang;
@@ -191,12 +199,10 @@ function applyStatic(){
   $('#icReload').setAttribute('aria-label',t('Новые картинки','New images'));
   $('#icAudio').setAttribute('aria-label',t('Аудиопроверка','Audio challenge'));
   $('#icInfo').setAttribute('aria-label',t('Подсказка','Hint'));
-  $('#lRu').setAttribute('aria-pressed',lang==='ru');$('#lEn').setAttribute('aria-pressed',lang==='en');
   showChallenge();
 }
-function setLang(l){if(l===lang)return;lang=l;try{localStorage.setItem('nr-lang',l)}catch(e){}applyStatic();
+function setLang(l){if(l===lang)return;lang=l;applyStatic();
   if(ended)finish(true);else if(L&&!$('#widget').classList.contains('hide'))startLevel(level);else updateGo()}
-$('#lRu').addEventListener('click',()=>setLang('ru'));$('#lEn').addEventListener('click',()=>setLang('en'));
 
 /* ---------- PLAIR: вызов «побей мой рекорд» ---------- */
 let challenge=null;
@@ -451,3 +457,5 @@ $('#icAudio').addEventListener('click',()=>say(t('Аудиопроверка: «
 $('#icInfo').addEventListener('click',()=>say(L&&!ended?L.hint():t('Нажмите на галочку, чтобы начать.','Click the checkbox to start.')));
 applyStatic();updateGo();
 </script>
+</body>
+</html>
