@@ -1,0 +1,453 @@
+<title>Я не робот</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="plair-verify" content="plair-YOUR-CODE">
+<script src="https://plair.pro/sdk.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* layout: one captcha widget on a dark "desk", game title and progress strip above it */
+:root{
+  --desk:#191d28; --desk-dot:#ffffff12; --desk-ink:#e7e9f1; --desk-muted:#9aa1b5;
+  --card:#ffffff; --ink:#202124; --muted:#5f6368; --line:#dadce0; --soft:#f4f5f7;
+  --blue:#3b72d9; --blue-d:#2c5cb9; --ok:#1e8e3e; --bad:#d93025; --warn:#ffd25e;
+  --display:'Unbounded','Arial Black',system-ui,sans-serif;
+  --body:'Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--desk);color:var(--desk-ink);font-family:var(--body);
+  background-image:radial-gradient(var(--desk-dot) 1px,transparent 1.5px);background-size:18px 18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:56px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:100%;
+}
+.top{width:min(400px,100%);display:flex;flex-direction:column;gap:6px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);line-height:1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.tag{margin:0;color:var(--desk-muted);font-size:15px;line-height:1.4}
+.prog{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--desk-muted);font-variant-numeric:tabular-nums}
+.prog .seg{display:flex;gap:4px;flex:1}
+.prog i{flex:1;height:4px;border-radius:2px;background:#ffffff1f}
+.prog i.done{background:var(--ok)}
+.prog i.now{background:var(--desk-ink)}
+
+/* start card */
+.start{width:min(400px,100%);background:var(--soft);border:1px solid #d3d3d3;border-radius:3px;box-shadow:0 2px 8px #0000004d;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 12px 14px;color:var(--ink)}
+.sbox,.rbox{display:flex;align-items:center;gap:12px;border:0;background:none;font:400 15px var(--body);color:var(--ink);cursor:pointer;padding:6px}
+.cb{width:28px;height:28px;border:2px solid #c1c1c1;border-radius:2px;background:#fff;flex:none;display:grid;place-items:center;transition:border-radius .2s}
+.spin .cb{border:4px solid #4a90e2;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;background:transparent}
+.done .cb{border-color:transparent;background:none}
+.done .cb::after{content:"";width:9px;height:18px;border:solid var(--ok);border-width:0 4px 4px 0;transform:rotate(45deg) translate(-2px,-2px)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:2px;color:#555;font-size:10px}
+.brand b{font-size:10px;font-weight:500;letter-spacing:.02em}
+.brand small{font-size:8px;color:#888}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* widget */
+.w{width:min(400px,100%);background:var(--card);color:var(--ink);border:1px solid #cfd2d6;box-shadow:0 10px 30px #00000066;padding:8px;display:flex;flex-direction:column}
+.w.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.head{background:var(--blue);color:#fff;padding:20px 20px 0;position:relative;transition:background .3s}
+.w.good .head{background:var(--ok)}
+.pre,.sub{font-size:14px;line-height:1.35}
+.word{font-size:28px;font-weight:700;line-height:1.15;margin:4px 0 6px;text-wrap:balance}
+.word.flip{animation:flip .35s}
+@keyframes flip{0%{opacity:0;transform:translateY(-6px) skewX(-12deg)}100%{opacity:1;transform:none}}
+.sub{opacity:.95;min-height:19px}
+.tbar{height:4px;background:#ffffff38;margin:16px -20px 0}
+.tbar i{display:block;height:100%;width:100%;background:#fff;transform-origin:left;transition:background .3s}
+.tbar i.low{background:var(--warn)}
+.tbar i.crit{background:#ff8a80}
+
+.body{margin-top:8px;position:relative}
+.board{position:relative;width:100%;aspect-ratio:1;background:#fff;overflow:hidden;--ts:90px}
+.board[hidden],.run[hidden],.end[hidden]{display:none!important}
+.scene{position:absolute;inset:0}
+.scene{background-size:cover;background-position:center}
+.spr{position:absolute;transform:translate(-50%,-50%);pointer-events:none;user-select:none;filter:drop-shadow(0 2px 2px #0006)}
+.tile{position:absolute;border:0;padding:0;margin:0;cursor:pointer;background:transparent;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.board.anim .tile{transition:left .42s ease-in-out,top .42s ease-in-out}
+.tile .in{position:absolute;inset:0;transition:transform .14s ease,opacity .35s ease}
+.tile .ph{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#9aa0a6}
+.tile .ph.pop{animation:pop .4s}
+@keyframes pop{0%{opacity:0;scale:1.25}100%{opacity:1;scale:1}}
+.tile.sel .in,.tile.sel .back{transform:scale(.8)}
+.tile.sel::after{content:"✓";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font:700 13px/22px var(--body);text-align:center;box-shadow:0 0 0 2px #fff}
+.tile.fade .in{opacity:0}
+.tile.win{box-shadow:0 0 0 2px #fff}
+.tile.win.sel{box-shadow:0 0 0 2px #fff,inset 0 0 0 7px #fff}
+.tile.hit{animation:hit .5s}
+@keyframes hit{0%,60%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9999px #1e8e3e66}100%{box-shadow:0 0 0 2px #fff}}
+.tile.miss{animation:miss .4s}
+@keyframes miss{0%,60%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9999px #d9302555}}
+.tile .back{z-index:1;position:absolute;inset:0;display:none;place-items:center;color:#ffffff73;font:800 calc(var(--ts)*.36) var(--display);background:repeating-linear-gradient(45deg,#3b72d9 0 9px,#3467c6 9px 18px);transition:transform .14s}
+.tile.cover .back{display:grid}
+.tile:focus-visible{outline:3px solid #fbbc04;outline-offset:-3px;z-index:2}
+.mover{position:absolute;width:calc(var(--ts)*.62);pointer-events:none;will-change:left,top,transform;filter:drop-shadow(2px 4px 3px #0007)}
+
+.run{position:relative;width:100%;aspect-ratio:1;background:var(--soft);border:1px dashed #cfd2d6;overflow:hidden;touch-action:none}
+.rbox{position:absolute;background:#fff;border:1px solid #d3d3d3;border-radius:3px;box-shadow:0 1px 4px #0002;padding:12px 16px 12px 12px;transition:left .16s ease-out,top .16s ease-out;white-space:nowrap}
+.rbox:focus-visible{outline:3px solid #fbbc04}
+
+.end{width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;background:var(--soft)}
+.end .seal{width:84px;height:84px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.end .seal::after{content:"";width:22px;height:42px;border:solid #fff;border-width:0 8px 8px 0;transform:rotate(45deg) translate(-4px,-4px)}
+.end h2{margin:6px 0 0;font:800 24px var(--display)}
+.end .pct{font:800 54px/1 var(--display);color:var(--blue);font-variant-numeric:tabular-nums}
+.end dl{display:grid;grid-template-columns:auto auto;gap:4px 16px;margin:6px 0 0;font-size:14px;text-align:left;font-variant-numeric:tabular-nums}
+.end dt{color:var(--muted)}
+.end dd{margin:0;font-weight:500}
+.end p{margin:4px 0 0;color:var(--muted);font-size:14px;max-width:30ch;line-height:1.4}
+
+.end{gap:8px}
+.end .seal{width:52px;height:52px}
+.end .seal::after{width:14px;height:26px;border-width:0 5px 5px 0}
+.end h2{font-size:18px}
+.end .unit{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:-4px}
+.end .unit.rec{color:var(--ok);font-weight:700}
+.end dd.neg{color:var(--bad)}
+.psc{font:800 14px var(--display);color:var(--desk-ink);min-width:3ch;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:0}
+.psc.bump{animation:bump .5s}
+@keyframes bump{30%{transform:scale(1.35);color:#7be495}}
+.trow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.lang{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:max(12px,calc(env(safe-area-inset-right,0px) + 12px));display:flex;border:1px solid #ffffff33;border-radius:999px;padding:2px;background:var(--desk);z-index:5}
+.top:has(.hide + .hide){display:none}
+.chal{margin:0;align-self:center;background:#f6c34422;color:var(--warn);border:1px solid #f6c34466;border-radius:999px;padding:6px 14px;font:700 13px var(--body);letter-spacing:.02em}
+.lang button{border:0;background:none;color:var(--desk-muted);font:700 12px var(--body);letter-spacing:.06em;padding:6px 10px;border-radius:999px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--desk-ink);color:var(--desk)}
+.lang button:focus-visible{outline:3px solid #fbbc04;outline-offset:1px}
+.msg{min-height:44px;padding:10px 6px 8px;font-size:14px;line-height:1.35;color:var(--muted)}
+.msg.bad{color:var(--bad)}
+.msg.ok{color:var(--ok);font-weight:500}
+.foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:10px 2px 2px;gap:8px}
+.icons{display:flex;gap:4px}
+.ic{width:40px;height:40px;border:0;background:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:#6b6f75}
+.ic:hover{background:#f1f3f4}
+.ic svg{width:24px;height:24px}
+.go{background:var(--blue);color:#fff;border:0;border-radius:2px;font:500 14px var(--body);letter-spacing:.04em;text-transform:uppercase;padding:13px 22px;cursor:pointer;min-width:132px}
+.go:hover{background:var(--blue-d)}
+.go:disabled{background:#9db6e6;cursor:default}
+.go:focus-visible,.ic:focus-visible,.sbox:focus-visible{outline:3px solid #fbbc04;outline-offset:2px}
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
+
+<div class="lang" role="group" aria-label="Language"><button id="lRu" aria-pressed="true">RU</button><button id="lEn" aria-pressed="false">EN</button></div>
+
+<div class="top">
+  <p class="chal hide" id="chal"></p>
+  <div class="prog hide" id="prog"><span id="plabel">1 / 10</span><span class="seg" id="pseg"></span><span class="psc" id="pscore">0</span></div>
+</div>
+
+<div class="start" id="start">
+  <button class="sbox" id="sbox"><span class="cb"></span><span id="sLbl">Я не робот</span></button>
+  <div class="brand">
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4a12 12 0 0 1 11.3 8" fill="none" stroke="#1c3aa9" stroke-width="4"/><path d="M28 16a12 12 0 0 1-8 11.3" fill="none" stroke="#4285f4" stroke-width="4"/><path d="M16 28A12 12 0 0 1 4 16" fill="none" stroke="#ababab" stroke-width="4"/><path d="M4.7 12A12 12 0 0 1 12 4.7" fill="none" stroke="#4285f4" stroke-width="4"/></svg>
+    <b id="brand">капча-ли</b><small id="legal">Конфиденциальность · Условия</small>
+  </div>
+</div>
+
+<div class="w hide" id="widget">
+  <div class="head">
+    <div class="pre" id="pre"></div>
+    <div class="word" id="word"></div>
+    <div class="sub" id="sub"></div>
+    <div class="tbar"><i id="tfill"></i></div>
+  </div>
+  <div class="body">
+    <div class="board" id="board"></div>
+    <div class="run" id="run" hidden><button class="rbox" id="rbox"><span class="cb"></span><span id="rLbl">Я не робот</span></button></div>
+    <div class="end" id="end" hidden></div>
+  </div>
+  <div class="msg" id="msg" aria-live="polite"></div>
+  <div class="foot">
+    <div class="icons">
+      <button class="ic" id="icReload" aria-label="Новые картинки"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+      <button class="ic" id="icAudio" aria-label="Аудиопроверка"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z"/></svg></button>
+      <button class="ic" id="icInfo" aria-label="Подсказка"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg></button>
+    </div>
+    <button class="go" id="go">Пропустить</button>
+  </div>
+</div>
+
+<script>const $=s=>document.querySelector(s);
+const W=$('#widget'),board=$('#board'),msgEl=$('#msg'),goBtn=$('#go'),run=$('#run'),rbox=$('#rbox'),endEl=$('#end');
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const div=c=>{const d=document.createElement('div');d.className=c;return d};
+const range=(k,ids)=>ids.map(i=>`img/${k}${i}.jpg`);
+
+/* ---------- язык ---------- */
+let lang='ru';
+try{lang=localStorage.getItem('nr-lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en')}catch(e){lang=(navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'}
+const t=(ru,en)=>lang==='en'?en:ru;
+function applyStatic(){
+  document.documentElement.lang=lang;
+  document.title=t('Я не робот',"I'm Not a Robot");
+  $('#sLbl').textContent=$('#rLbl').textContent=t('Я не робот',"I'm not a robot");
+  $('#brand').textContent=t('капча-ли','captcha-ish');
+  $('#legal').textContent=t('Конфиденциальность · Условия','Privacy · Terms');
+  $('#icReload').setAttribute('aria-label',t('Новые картинки','New images'));
+  $('#icAudio').setAttribute('aria-label',t('Аудиопроверка','Audio challenge'));
+  $('#icInfo').setAttribute('aria-label',t('Подсказка','Hint'));
+  $('#lRu').setAttribute('aria-pressed',lang==='ru');$('#lEn').setAttribute('aria-pressed',lang==='en');
+  showChallenge();
+}
+function setLang(l){if(l===lang)return;lang=l;try{localStorage.setItem('nr-lang',l)}catch(e){}applyStatic();
+  if(ended)finish(true);else if(L&&!$('#widget').classList.contains('hide'))startLevel(level);else updateGo()}
+$('#lRu').addEventListener('click',()=>setLang('ru'));$('#lEn').addEventListener('click',()=>setLang('en'));
+
+/* ---------- PLAIR: вызов «побей мой рекорд» ---------- */
+let challenge=null;
+function showChallenge(){if(!challenge)return;const tag=$('#chal');tag.classList.remove('hide');
+  tag.textContent=(challenge.name?challenge.name+': ':'')+t(`побей ${challenge.score} очков`,`beat ${challenge.score} points`)}
+try{if(window.PLAIR&&PLAIR.onChallenge)PLAIR.onChallenge(function(c){if(c&&c.score!=null){challenge=c;showChallenge()}})}catch(e){}
+
+/* фото-пулы */
+const P={
+  light:range('light',[0,1,2,3,5,6,7,8]), road:['img/light4.jpg'],
+  moto:range('moto',[0,1,2,3,4,5,6,7,8]), bike:range('bike',[0,1,2,3,4,5,6,7,8]),
+  hyd:range('hyd',[0,1,2,3,4,5,6,7,8]), misc:range('misc',[0,1,2,3,4,5,6,7,8]),
+  cat:range('ani',[0,1,2]), dog:range('ani',[3,4,5]), duck:range('ani',[6,7,8]),
+  robot:range('robot',[1,2,3,4,5,6,7]), ppl:range('ppl',[0,1,2,3,4,5,6,7,8])
+};
+[...Object.values(P).flat(),'img/bus.jpg','img/road.jpg','img/grass.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
+
+let tiles=[],n=3,level=0,L=null,S={timers:[]},timeLeft=1,timeMax=1,running=false,locked=false,ended=false;
+let mistakes=0,sus=0,tStart=0,score=0,levelFails=0,stat={base:0,speed:0,clean:0},secs=0,reported=false;
+function bump(){const e=$('#pscore');e.textContent=score;e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
+
+const ph=(src,target=false,extra={})=>({src,target,flip:Math.random()<.35,...extra});
+function pick(pool,k,used){const a=shuffle(pool.filter(s=>!used.has(s))).slice(0,k);a.forEach(s=>used.add(s));return a}
+function deal(N,pool,k,decoys){const used=new Set();const out=pick(pool,k,used).map(s=>ph(s,true));
+  const d=pick(decoys.flat(),N-k,used);d.forEach(s=>out.push(ph(s,false)));while(out.length<N)out.push(ph(rnd(decoys.flat())));return shuffle(out)}
+
+/* ---------- board ---------- */
+function build(nn,contents,opts={}){
+  n=nn;board.innerHTML='';tiles=[];board.classList.remove('anim');S.scene=null;
+  if(opts.scene){const sc=div('scene');sc.style.backgroundImage=`url(${opts.scene})`;board.append(sc);S.scene=sc}
+  for(let i=0;i<n*n;i++){
+    const el=document.createElement('button');el.className='tile'+(opts.scene?' win':'');el.setAttribute('aria-label',t('Квадрат ','Square ')+(i+1));
+    const inn=div('in'),p=div('ph');if(!opts.scene)inn.append(p);
+    const back=div('back');back.textContent='?';el.append(inn,back);
+    const tl={el,inn,p,cell:i,c:null,sel:false};if(contents)setContent(tl,contents[i]);
+    el.addEventListener('click',()=>onTile(tl));place(tl);board.append(el);tiles.push(tl);
+  }
+  resize();
+}
+function place(x){const r=Math.floor(x.cell/n),c=x.cell%n,p=100/n;Object.assign(x.el.style,{left:`calc(${c*p}% + 2px)`,top:`calc(${r*p}% + 2px)`,width:`calc(${p}% - 4px)`,height:`calc(${p}% - 4px)`})}
+function setContent(x,c,pop){x.c=c;if(!c)return;x.p.style.backgroundImage=`url(${c.src})`;x.p.style.transform=c.flip?'scaleX(-1)':'';
+  x.p.classList.remove('pop');if(pop){void x.p.offsetWidth;x.p.classList.add('pop')}}
+function setSel(x,v){x.sel=v;x.el.classList.toggle('sel',v);updateGo()}
+function resize(){const w=board.clientWidth||run.clientWidth||360;board.style.setProperty('--ts',(w/n)+'px')}
+new ResizeObserver(resize).observe(board);
+function sprite(src,x,y,size,rot=0){const im=document.createElement('img');im.src=src;im.alt='';im.className='spr';
+  Object.assign(im.style,{left:x/n*100+'%',top:y/n*100+'%',width:`calc(var(--ts)*${size})`,transform:`translate(-50%,-50%) rotate(${rot}deg)`});S.scene.append(im);return im}
+
+/* ---------- ui helpers ---------- */
+function setHead(pre,word,sub){$('#pre').textContent=pre;const w=$('#word');w.textContent=word;w.classList.remove('flip');void w.offsetWidth;w.classList.add('flip');$('#sub').textContent=sub||''}
+function say(s,k=''){msgEl.textContent=s;msgEl.className='msg '+k}
+function later(f,ms){const id=setTimeout(f,ms);S.timers.push(id);return id}
+function shake(){W.classList.remove('shake');void W.offsetWidth;W.classList.add('shake')}
+function updateGo(){if(ended){goBtn.textContent=t('Ещё раз','Play again');return}
+  if(L&&L.goLabel){goBtn.textContent=L.goLabel();return}goBtn.textContent=tiles.some(x=>x.sel)?t('Подтвердить','Verify'):t('Пропустить','Skip')}
+function wrongTiles(isT){return tiles.filter(x=>x.sel!==!!(x.c&&(isT?isT(x):x.c.target)))}
+function stdVerify(){const w=wrongTiles();if(!w.length)win(L.winMsg());else fail(L.failMsg(w))}
+function onTile(x){if(!running||locked||S.pause)return;if(L.click&&L.click(x))return;setSel(x,!x.sel)}
+function win(text){locked=true;running=false;
+  const sp=Math.round(timeLeft)*5,cl=levelFails?0:50;stat.base+=100;stat.speed+=sp;if(cl)stat.clean++;levelFails=0;
+  const pts=100+sp+cl;score+=pts;say(`${text} +${pts}`,'ok');bump();W.classList.add('good');
+  later(()=>{W.classList.remove('good');level+1<LEVELS.length?startLevel(level+1):finish()},1900)}
+function fail(text,stay){mistakes++;levelFails++;say(text,'bad');shake();if(stay)return;locked=true;running=false;later(()=>startLevel(level),1900)}
+function prog(){$('#plabel').textContent=`${level+1} / ${LEVELS.length}`;[...$('#pseg').children].forEach((i,k)=>i.className=k<level?'done':k===level?'now':'')}
+function startLevel(i){
+  S.timers.forEach(clearTimeout);S={timers:[]};
+  level=i;L=LEVELS[i];board.hidden=false;run.hidden=true;endEl.hidden=true;
+  goBtn.disabled=false;locked=false;running=true;timeMax=timeLeft=L.time;
+  say(t(`Проверка ${i+1} из ${LEVELS.length}.`,`Check ${i+1} of ${LEVELS.length}.`));L.setup();updateGo();prog();
+}
+const SKIP=()=>t('Если их нет, нажмите «Пропустить».','If there are none, click skip.');
+const PICK=()=>t('Выберите все изображения, на которых есть','Select all images with');
+const PICKSQ=()=>t('Выберите все квадраты, на которых есть','Select all squares with');
+
+/* ---------- levels ---------- */
+const LEVELS=[
+{ // 1. честная
+  time:20,hint:()=>t('Тут всё честно. Наслаждайтесь, пока можно.','This one is fair. Enjoy it while it lasts.'),
+  setup(){setHead(PICK(),t('светофоры','traffic lights'),SKIP());build(3,deal(9,P.light,4,[P.road,P.misc,P.bike]))},
+  failMsg:w=>w.some(x=>x.c.src===P.road[0])?t('На пустой дороге светофора нет. Мы проверяли.','There is no traffic light on that empty road. We checked.'):t('Не совсем. Посчитайте светофоры ещё раз.','Not quite. Count the traffic lights again.'),
+  winMsg:()=>t('Отлично. Это было просто. Дальше будет хуже.','Great. That was easy. It gets worse from here.')
+},
+{ // 2. мотоцикл уезжает
+  time:25,hint:()=>t('Мотоциклы не любят, когда на них показывают пальцем. Но они устают.','Motorcycles hate being pointed at. But they get tired.'),
+  setup(){setHead(PICK(),t('мотоциклы','motorcycles'),SKIP());
+    build(3,deal(9,P.moto,3,[P.bike,P.misc]));tiles.forEach(x=>x.c.target&&(x.c.esc=1+(Math.random()<.6)))},
+  click(x){
+    if(!(x.c.target&&x.c.esc>0)){if(x.c.target&&!S.tired){S.tired=1;say(t('Мотоцикл устал. Можно брать.','The motorcycle is tired. Go ahead.'))}return false}
+    x.c.esc--;const u=rnd(tiles.filter(u=>u!==x&&!u.sel&&!u.c.target));const a=x.c,b=u.c;setContent(u,a,true);setContent(x,b,true);
+    say(rnd(t(['Он уехал.','Вжух.','Мотоцикл не хочет, чтобы его выбирали.','Он перепарковался.','Тут только что был мотоцикл.'],
+      ['It drove off.','Vroom.','The motorcycle does not want to be selected.','It re-parked.','There was a motorcycle here a second ago.'])));return true},
+  failMsg:w=>w.some(x=>x.c.src.includes('bike'))?t('Это велосипед. У него нет мотора, только амбиции.','That is a bicycle. No engine, just ambition.'):t('Не все мотоциклы пойманы. Или поймано лишнее.','Some motorcycles got away. Or you caught something extra.'),
+  winMsg:()=>t('Поймали. Мотоциклы подали жалобу.','Caught them. The motorcycles filed a complaint.')
+},
+{ // 3. автобус
+  time:20,hint:()=>t('Автобус большой. Краешки — вопрос философский.','The bus is big. The edges are a philosophical question.'),
+  setup(){setHead(PICKSQ(),t('автобусы','a bus'),SKIP());build(4,null,{scene:'img/bus.jpg'});
+    const R={x:.24,y:1.45,w:3.1,h:1.22};
+    tiles.forEach(x=>{const r=Math.floor(x.cell/4),c=x.cell%4;
+      const ox=Math.max(0,Math.min(c+1,R.x+R.w)-Math.max(c,R.x)),oy=Math.max(0,Math.min(r+1,R.y+R.h)-Math.max(r,R.y));x.cov=ox*oy})},
+  verify(){
+    const miss=tiles.filter(x=>x.cov>=.5&&!x.sel),sky=tiles.filter(x=>x.cov===0&&x.sel),edge=tiles.filter(x=>x.cov>0&&x.cov<.5&&x.sel);
+    if(miss.length)return fail(t('Автобус большой. Выберите его целиком.','The bus is big. Select all of it.'));
+    if(sky.length)return fail(t('Там нет автобуса. Там небо, дерево или асфальт.','No bus there. Just sky, trees or asphalt.'));
+    win(edge.length?t('Про зеркало и бампер мы и сами не уверены. Засчитано.','We are not sure about the mirror and bumper either. Accepted.'):t('Без краешков. Смелое решение. Засчитано.','No edges. Bold choice. Accepted.'))}
+},
+{ // 4. гидранты
+  time:30,hint:()=>t('Кликайте, пока они не кончатся. Они кончатся. Честно.','Keep clicking until they run out. They will. Honestly.'),
+  setup(){setHead(PICK(),t('пожарные гидранты','fire hydrants'),t('Нажимайте, пока они не закончатся.','Click until there are none left.'));
+    build(3,deal(9,P.hyd,3,[P.misc,P.road,P.bike]));S.budget=6;S.ref=0},
+  click(x){
+    if(!x.c.target)return false;if(x.busy)return true;
+    x.busy=1;x.el.classList.add('sel');
+    later(()=>{x.el.classList.add('fade');later(()=>{
+      const spawn=S.budget>0&&Math.random()<.7;if(spawn)S.budget--;
+      setContent(x,spawn?ph(rnd(P.hyd),true):ph(rnd([...P.misc,...P.bike])),true);x.el.classList.remove('sel','fade');x.busy=0;S.ref++;
+      const left=tiles.some(u=>u.c.target);if(!left)S.budget=0;
+      if(!left)say(t('Кажется, гидранты кончились. Наверное.','Looks like we are out of hydrants. Probably.'));
+      else if(S.ref===2)say(t('Появились новые изображения. Это нормально.','New images loaded. This is normal.'));
+      else if(S.ref===5)say(t('Да, они продолжают появляться.','Yes, they keep coming.'));
+      else if(S.ref===7)say(t('В этом районе очень много гидрантов.','This neighborhood has a lot of hydrants.'));
+    },650)},300);return true},
+  failMsg:w=>w.some(x=>x.c.target)?t('Там ещё гидрант. Он только что появился, мы знаем.','There is another hydrant. It just appeared, we know.'):t('Выбрано что-то, из чего не тушат пожары.','You picked something that does not put out fires.'),
+  winMsg:()=>t('Все гидранты найдены. Район в безопасности.','All hydrants found. The neighborhood is safe.')
+},
+{ // 5. задание меняется
+  time:30,hint:()=>t('Смотрите на заголовок. Он живёт своей жизнью.','Watch the header. It has a mind of its own.'),
+  setup(){S.W=[[()=>t('кошки','cats'),'cat'],[()=>t('собаки','dogs'),'dog'],[()=>t('утки','ducks'),'duck']];S.wi=0;S.acc=0;
+    setHead(PICK(),S.W[0][0](),t('Задание может обновиться без предупреждения.','The task may change without notice.'));
+    build(3,shuffle(S.W.flatMap(([,k])=>P[k].map(s=>ph(s,false,{kind:k})))))},
+  tick(dt){S.acc+=dt;if(S.acc>4.4){S.acc=0;let k;do{k=Math.random()*3|0}while(k===S.wi);S.wi=k;
+    setHead(PICK(),S.W[k][0](),t('Задание может обновиться без предупреждения.','The task may change without notice.'));
+    say(rnd(t(['Мы передумали.','Новая задача.','Шутка. Вот теперь точно.','Отдел капчи решил иначе.'],['We changed our mind.','New task.','Just kidding. This one for real.','The captcha department disagrees.'])))}},
+  verify(){const cur=S.W[S.wi][1];const w=wrongTiles(x=>x.c.kind===cur);
+    if(!w.length)win(t('Вы успели до следующей смены настроения.','You made it before our next mood swing.'));else fail(t('Пока вы выбирали, задание поменялось. Бывает.','The task changed while you were choosing. It happens.'))}
+},
+{ // 6. память
+  time:20,hint:()=>t('Велосипеды никуда не делись, просто накрыты.','The bicycles did not go anywhere. They are just covered.'),
+  setup(){setHead(t('Запомните, где','Remember where the'),t('велосипеды','bicycles are'),t('Сейчас мы их спрячем.','We are about to hide them.'));
+    build(3,deal(9,P.bike,3,[P.moto,P.misc]));S.pause=1;goBtn.disabled=true;say(t('Запоминайте…','Memorize…'));
+    later(()=>{tiles.forEach(x=>x.el.classList.add('cover'));S.pause=0;goBtn.disabled=false;
+      setHead(t('Выберите все квадраты, где были','Select all squares that had'),t('велосипеды','bicycles'),t('Картинки спрятаны. Вспоминайте.','The images are hidden. Remember.'));say(t('Ваш ход.','Your move.'))},2800)},
+  verify(){locked=true;tiles.forEach(x=>x.el.classList.remove('cover'));later(()=>{locked=false;stdVerify()},700)},
+  failMsg:w=>w.some(x=>x.c.src.includes('moto'))?t('Это мотоцикл. Под рубашкой не видно, понимаем.','That is a motorcycle. Hard to tell under a cover, we get it.'):t('Память подвела. Ещё раз.','Memory failed you. Try again.'),
+  winMsg:()=>t('Глаз как у ястреба. У человеческого ястреба.','Eyes like a hawk. A human hawk.')
+},
+{ // 7. погоня
+  time:25,goLabel:()=>t('Ловите','Catch it'),hint:()=>t('Жмите на квадрат, где скутер сейчас, а не где он был.','Tap the square where the scooter is now, not where it was.'),
+  setup(){setHead(t('Нажмите на квадрат, где сейчас','Tap the square with the'),t('скутер','scooter'),t('Три раза. Он не будет стоять на месте.','Three times. It will not sit still.'));
+    build(4,null,{scene:'img/road.jpg'});
+    const m=document.createElement('img');m.src='img/scooter.png';m.alt='';m.className='mover';S.scene.append(m);
+    S.m={el:m,x:1.2,y:2.5,vx:1.5,vy:1.1,sp:1};S.hits=0;goBtn.disabled=true;this.tick(0)},
+  tick(dt){const m=S.m,lo=.35,hi=n-.35;m.x+=m.vx*m.sp*dt;m.y+=m.vy*m.sp*dt;
+    if(m.x<lo||m.x>hi){m.vx*=-1;m.x=Math.max(lo,Math.min(hi,m.x))}if(m.y<lo||m.y>hi){m.vy*=-1;m.y=Math.max(lo,Math.min(hi,m.y))}
+    if(Math.random()<dt*.4){m.vy=(Math.random()-.5)*2.6}
+    const ang=Math.atan2(m.vy,m.vx)*180/Math.PI+90;
+    m.el.style.left=m.x/n*100+'%';m.el.style.top=m.y/n*100+'%';m.el.style.transform=`translate(-50%,-50%) rotate(${ang}deg)`},
+  click(x){const m=S.m,cell=Math.min(n-1,Math.floor(m.y))*n+Math.min(n-1,Math.floor(m.x));
+    x.el.classList.remove('hit','miss');void x.el.offsetWidth;
+    if(x.cell===cell){S.hits++;x.el.classList.add('hit');m.sp*=1.4;m.vx=(Math.random()<.5?-1:1)*1.6;m.vy=(Math.random()-.5)*2.4;
+      if(S.hits>=3)win(t('Пойман. Скутер подал апелляцию.','Caught. The scooter is filing an appeal.'));else say(t(`Есть! ${S.hits} из 3. Он разозлился.`,`Got it! ${S.hits} of 3. Now it is angry.`),'ok')}
+    else{sus++;score=Math.max(0,score-10);bump();x.el.classList.add('miss');say(rnd(t(['Мимо. Он был в соседнем.','Он уже уехал.','Почти.','Это асфальт.'],['Missed. It was next door.','It already left.','Almost.','That is asphalt.'])))}
+    return true}
+},
+{ // 8. роботы
+  time:16,hint:()=>t('Внимательно перечитайте нижнюю строчку задания.','Read the bottom line of the task again. Carefully.'),
+  setup(){setHead(PICK(),t('люди','people'),SKIP());
+    const r=shuffle([...P.robot]);build(3,[...Array(9)].map((_,i)=>ph(r[i%r.length])));S.acc=0},
+  tick(dt){S.acc+=dt;if(S.acc>1.15){S.acc=0;const x=rnd(tiles);if(x.flash)return;x.flash=1;const keep=x.c;
+    setContent(x,ph(rnd(P.ppl)));later(()=>{setContent(x,keep);x.flash=0},420)}},
+  verify(){if(tiles.some(x=>x.sel))fail(t('Это был робот. Они научились надевать куртки.','That was a robot. They learned to wear jackets.'));
+    else win(t('Верно, людей тут нет. Кроме вас. Надеемся.','Correct, no people here. Except you. We hope.'))}
+},
+{ // 9. муравьи
+  time:25,hint:()=>t('Их ровно два. Божьи коровки не считаются.','There are exactly two. Ladybugs do not count.'),
+  setup(){setHead(PICKSQ(),t('муравьи','ants'),SKIP());build(6,null,{scene:'img/grass.jpg'});
+    const cells=shuffle([...Array(36).keys()]);S.ants=new Set(cells.slice(0,2));
+    const put=(cell,src,size)=>{const r=Math.floor(cell/6),c=cell%6;sprite(src,c+.25+Math.random()*.5,r+.25+Math.random()*.5,size,Math.random()*360)};
+    cells.slice(0,2).forEach(c=>put(c,'img/ant.png',.34));cells.slice(2,5).forEach(c=>put(c,'img/bug.png',.3));
+    tiles.forEach(x=>x.c={target:S.ants.has(x.cell)})},
+  failMsg:()=>t('Муравьёв два. Мы считали с лупой.','There are two ants. We counted with a magnifier.'),
+  winMsg:()=>t('Зрение 100%. Можно в снайперы.','Perfect eyesight. Sniper material.')
+},
+{ // 10. финал
+  time:40,hint:()=>t('Галочка убегает не вечно. А потом — люди иногда ошибаются.','The checkbox cannot run forever. And then: humans make mistakes.'),
+  setup(){S.phaseA=1;S.esc=6;S.lastJ=0;board.hidden=true;run.hidden=false;rbox.classList.remove('spin','done');
+    setHead(t('Последний шаг. Отметьте','Last step. Check'),t('«Я не робот»','"I\'m not a robot"'),t('Просто нажмите на галочку.','Just click the checkbox.'));goBtn.disabled=true;
+    requestAnimationFrame(()=>{rbox.style.left=(run.clientWidth-rbox.offsetWidth)/2+'px';rbox.style.top=(run.clientHeight-rbox.offsetHeight)/2+'px'})},
+  verify(){
+    if(S.phaseA)return say(t('Сначала галочка.','Checkbox first.'));
+    const w=wrongTiles();
+    if(!tiles.some(x=>x.sel))return fail(t('«Пропустить» — любимая кнопка роботов.','"Skip" is a robot\'s favorite button.'),true);
+    if(!w.length){sus++;score=Math.max(0,score-10);bump();tiles.forEach(x=>setSel(x,false));return fail(t('Идеально. Слишком идеально. Так отвечают только роботы.','Perfect. Too perfect. Only robots answer like that.'),true)}
+    win(t('Вот теперь верим. Добро пожаловать, человек.','Now we believe you. Welcome, human.'))}
+}
+];
+
+/* финальная галочка */
+function jump(){const now=performance.now();if(now-S.lastJ<220)return;S.lastJ=now;
+  const W2=run.clientWidth-rbox.offsetWidth-8,H2=run.clientHeight-rbox.offsetHeight-8;
+  const cx=parseFloat(rbox.style.left)||0,cy=parseFloat(rbox.style.top)||0;let x,y,g=0;
+  do{x=4+Math.random()*W2;y=4+Math.random()*H2}while(Math.hypot(x-cx,y-cy)<W2*.45&&++g<30);
+  rbox.style.left=x+'px';rbox.style.top=y+'px';S.esc--;
+  say(t(['Галочка устала. Жмите.','Ладно, ладно.','Почти.','Галочка стесняется.','Не так быстро.','Ой.'],['The checkbox is tired. Click it.','Fine, fine.','Almost.','The checkbox is shy.','Not so fast.','Oops.'])[S.esc])}
+function checkBox(){S.phaseA=0;rbox.classList.add('spin');say(t('Проверяем…','Verifying…'));
+  later(()=>{rbox.classList.remove('spin');rbox.classList.add('done');
+    later(()=>{run.hidden=true;board.hidden=false;goBtn.disabled=false;timeLeft=Math.max(timeLeft,22);
+      setHead(t('Подозрительно быстро. Выберите все','Suspiciously fast. Select all images with'),t('светофоры','traffic lights'),t('Подсказка: люди иногда ошибаются.','Hint: humans sometimes make mistakes.'));
+      build(3,deal(9,P.light,4,[P.road,P.misc]));updateGo();say(t('Ещё одна проверка. Последняя. Наверное.','One more check. The last one. Probably.'))},700)},1000)}
+run.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||!S.phaseA||S.esc<=0||locked)return;
+  const r=rbox.getBoundingClientRect();const dx=Math.max(r.left-e.clientX,0,e.clientX-r.right),dy=Math.max(r.top-e.clientY,0,e.clientY-r.bottom);
+  if(Math.hypot(dx,dy)<34)jump()});
+rbox.addEventListener('pointerdown',e=>{if(!S.phaseA||locked||!running)return;e.preventDefault();S.esc>0?jump():checkBox()});
+rbox.addEventListener('click',e=>{if(e.detail!==0||!S.phaseA||!running)return;S.esc>0?jump():checkBox()});
+
+/* ---------- loop ---------- */
+let last=performance.now();const tfill=$('#tfill');
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(running&&!locked&&!S.pause&&L){timeLeft-=dt;if(L.tick)L.tick(dt);
+    if(timeLeft<=0){timeLeft=0;fail(rnd(t(['Время вышло. Люди думают долго, но не настолько.','Время вышло. Вы точно не уснули?'],['Time is up. Humans are slow, but not that slow.','Time is up. Did you fall asleep?'])))}}
+  const f=Math.max(0,Math.min(1,timeLeft/timeMax));tfill.style.transform=`scaleX(${f})`;
+  tfill.className=f<.15?'crit':f<.35?'low':'';requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+
+/* ---------- start / end ---------- */
+function begin(){ended=false;reported=false;mistakes=0;sus=0;score=0;levelFails=0;stat={base:0,speed:0,clean:0};$('#pscore').textContent='0';
+  tStart=performance.now();$('#start').classList.add('hide');W.classList.remove('hide');$('#prog').classList.remove('hide');startLevel(0)}
+$('#pseg').innerHTML='<i></i>'.repeat(LEVELS.length);
+$('#sbox').addEventListener('click',function(){if(this.classList.contains('spin'))return;this.classList.add('spin');
+  setTimeout(()=>{this.classList.remove('spin');this.classList.add('done');setTimeout(begin,500)},900)});
+function finish(rerender){ended=true;running=false;board.hidden=true;run.hidden=true;endEl.hidden=false;
+  if(!rerender)secs=Math.round((performance.now()-tStart)/1000);
+  const p=Math.max(51,Math.min(99,99-mistakes*5-sus*2));
+  const line=p>92?t('Подозрительно хорошо. Мы будем за вами наблюдать.','Suspiciously good. We will be watching you.'):p>75?t('Сойдёт. Роботы так не нервничают.','Good enough. Robots do not get this nervous.'):t('Много ошибок. Очень по-человечески.','Lots of mistakes. Very human.');
+  let best=0,rec=false;
+  try{best=+localStorage.getItem('nr-best')||0;if(!rerender){rec=score>best;if(rec)localStorage.setItem('nr-best',String(score));finish.rec=rec;finish.prev=best}else{rec=finish.rec;best=finish.prev}}catch(e){}
+  const unit=rec?(best?t('новый рекорд','new record'):t('очков','points')):t('очков · рекорд ','points · best ')+best;
+  endEl.innerHTML=`<div class="seal"></div><h2>${t('Вы человек на','You are')} ${p}%${t('',' human')}</h2><div class="pct">${score}</div>
+    <div class="unit${rec?' rec':''}">${unit}</div>
+    <dl><dt>${t('Проверки','Checks')}</dt><dd>+${stat.base}</dd><dt>${t('Бонус за скорость','Speed bonus')}</dt><dd>+${stat.speed}</dd>
+    <dt>${t('С первой попытки','First try')}</dt><dd>${stat.clean} × 50</dd><dt>${t('Подозрительные действия','Suspicious actions')}</dt><dd class="neg">−${sus*10}</dd>
+    <dt>${t('Ошибки · время','Mistakes · time')}</dt><dd>${mistakes} · ${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}</dd></dl><p>${line}</p>`;
+  setHead(t('Проверка пройдена','Verification complete'),t('спасибо, человек','thank you, human'),t('Можно идти. Капча вас запомнила.','You may go. The captcha will remember you.'));timeLeft=timeMax;
+  say('');goBtn.disabled=false;updateGo();
+  [...$('#pseg').children].forEach(i=>i.className='done');$('#plabel').textContent=`${LEVELS.length} / ${LEVELS.length}`;
+  /* PLAIR: итоговый счёт — ровно один раз за партию */
+  if(!reported){reported=true;try{if(window.PLAIR)PLAIR.score(score)}catch(e){}}
+}
+goBtn.addEventListener('click',()=>{if(ended){begin();return}if(!running||locked||S.pause||!L)return;L.verify?L.verify():stdVerify()});
+$('#icReload').addEventListener('click',()=>say(rnd(t(['Новые картинки загружены. Они такие же.','Обновили. Ничего не изменилось.','Перезагрузка не спасёт.'],['New images loaded. They look the same.','Refreshed. Nothing changed.','Reloading will not save you.']))));
+$('#icAudio').addEventListener('click',()=>say(t('Аудиопроверка: «бип-буп-бип». Если вы это поняли, у нас вопросы.','Audio challenge: "beep-boop-beep". If you understood that, we have questions.')));
+$('#icInfo').addEventListener('click',()=>say(L&&!ended?L.hint():t('Нажмите на галочку, чтобы начать.','Click the checkbox to start.')));
+applyStatic();updateGo();
+</script>
