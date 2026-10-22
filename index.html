@@ -115,7 +115,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);lin
 .tile .back{z-index:1;position:absolute;inset:0;display:none;place-items:center;color:#ffffff73;font:800 calc(var(--ts)*.36) var(--display);background:repeating-linear-gradient(45deg,#3b72d9 0 9px,#3467c6 9px 18px);transition:transform .14s}
 .tile.cover .back{display:grid}
 .tile:focus-visible{outline:3px solid #fbbc04;outline-offset:-3px;z-index:2}
-.mover{position:absolute;width:calc(var(--ts)*.62);pointer-events:none;will-change:left,top,transform;filter:drop-shadow(2px 4px 3px #0007)}
+.mover{position:absolute;width:calc(var(--ts)*.34);pointer-events:none;will-change:left,top,transform;filter:drop-shadow(2px 4px 3px #0007)}
 
 .run{position:relative;width:100%;aspect-ratio:1;background:var(--soft);border:1px dashed #cfd2d6;overflow:hidden;touch-action:none}
 .rbox{position:absolute;background:#fff;border:1px solid #d3d3d3;border-radius:3px;box-shadow:0 1px 4px #0002;padding:12px 16px 12px 12px;transition:left .16s ease-out,top .16s ease-out;white-space:nowrap}
@@ -243,7 +243,7 @@ const P={
   duck:[...range('ani',[6,7,8]),...range('anA',[6,7,8]),...range('anB',[6,8])], rubber:['img/anB7.jpg'],
   robot:range('robot',[1,2,3,4,5,6,7]), ppl:range('ppl',[0,1,2,3,4,5,6,7,8])
 };
-[...Object.values(P).flat(),'img/bus.jpg','img/road.jpg','img/grass.jpg','img/market.jpg','img/crowd.jpg','img/beach.jpg','img/capy.jpg','img/meerkat.jpg','img/hay.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
+[...Object.values(P).flat(),'img/road.jpg','img/grass.jpg','img/market.jpg','img/crowd.jpg','img/beach.jpg','img/capy.jpg','img/meerkat.jpg','img/hay.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
 
 let tiles=[],n=3,level=0,L=null,S={timers:[]},timeLeft=1,timeMax=1,running=false,locked=false,ended=false;
 let mistakes=0,sus=0,tStart=0,score=0,levelFails=0,stat={base:0,speed:0,clean:0},secs=0,reported=false;
@@ -335,19 +335,7 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.src.includes('moto'))?t('У этого есть мотор. Это мотоцикл.','That one has an engine. It is a motorcycle.'):t('Не все велосипеды найдены. Или лишнее.','Not all bicycles found. Or something extra.'),
   winMsg:()=>t('Верно. Пока всё по-взрослому.','Correct. Still all very serious.')
 },
-{ // 3. автобус
-  time:20,hint:()=>t('Автобус большой. Краешки — вопрос философский.','The bus is big. The edges are a philosophical question.'),
-  setup(){setHead(PICKSQ(),t('автобусы','a bus'),SKIP());build(4,null,{scene:'img/bus.jpg'});
-    const R={x:.24,y:1.45,w:3.1,h:1.22};
-    tiles.forEach(x=>{const r=Math.floor(x.cell/4),c=x.cell%4;
-      const ox=Math.max(0,Math.min(c+1,R.x+R.w)-Math.max(c,R.x)),oy=Math.max(0,Math.min(r+1,R.y+R.h)-Math.max(r,R.y));x.cov=ox*oy})},
-  verify(){
-    const miss=tiles.filter(x=>x.cov>=.5&&!x.sel),sky=tiles.filter(x=>x.cov===0&&x.sel),edge=tiles.filter(x=>x.cov>0&&x.cov<.5&&x.sel);
-    if(miss.length)return fail(t('Автобус большой. Выберите его целиком.','The bus is big. Select all of it.'));
-    if(sky.length)return fail(t('Там нет автобуса. Там небо, дерево или асфальт.','No bus there. Just sky, trees or asphalt.'));
-    win(edge.length?t('Про зеркало и бампер мы и сами не уверены. Засчитано.','We are not sure about the mirror and bumper either. Accepted.'):t('Без краешков. Смелое решение. Засчитано.','No edges. Bold choice. Accepted.'))}
-},
-{ // 4. гидранты
+{ // 3. гидранты
   time:30,hint:()=>t('Кликайте, пока они не кончатся. Они кончатся. Честно.','Keep clicking until they run out. They will. Honestly.'),
   setup(){setHead(PICK(),t('пожарные гидранты','fire hydrants'),t('Нажимайте, пока они не закончатся.','Click until there are none left.'));
     build(3,deal(9,P.hyd,3,[P.misc,P.road,P.bike]));S.budget=6;S.ref=0},
@@ -366,13 +354,13 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.target)?t('Там ещё гидрант. Он только что появился, мы знаем.','There is another hydrant. It just appeared, we know.'):t('Выбрано что-то, из чего не тушат пожары.','You picked something that does not put out fires.'),
   winMsg:()=>t('Все гидранты найдены. Район в безопасности.','All hydrants found. The neighborhood is safe.')
 },
-{ // 5. капибары: одна чуть больше
-...ODD({n:4,img:'img/capy.jpg',base:100,odd:111,pos:'46% 56%',time:25,
+{ // 4. капибары: одна чуть больше
+...ODD({n:4,img:'img/capy.jpg',base:100,odd:124,pos:'46% 56%',time:25,
   pre:()=>t('Выберите самую крупную','Select the biggest'),word:()=>t('капибару','capybara'),sub:()=>t('Они одинаковые. Почти.','They are identical. Almost.'),
   hint:()=>t('Одна капибара плотнее пообедала. Сравните, как она заполняет квадрат.','One capybara had a bigger lunch. Compare how much of the square it fills.'),
   win:()=>t('Верно. Она просто пушистее, не обсуждаем.','Correct. She is just fluffier, let us not discuss it.'),
   fail:()=>t('Самая крупная — в подсвеченном квадрате. Она теперь обижена.','The biggest one is highlighted. Now she is offended.')})},
-{ // 6. мотоцикл уезжает
+{ // 5. мотоцикл уезжает
   time:25,hint:()=>t('Мотоциклы не любят, когда на них показывают пальцем. Но они устают.','Motorcycles hate being pointed at. But they get tired.'),
   setup(){setHead(PICK(),t('мотоциклы','motorcycles'),SKIP());
     build(3,deal(9,P.moto,3,[P.bike,P.misc]));tiles.forEach(x=>x.c.target&&(x.c.esc=1+(Math.random()<.6)))},
@@ -384,14 +372,14 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.src.includes('bike'))?t('Это велосипед. У него нет мотора, только амбиции.','That is a bicycle. No engine, just ambition.'):t('Не все мотоциклы пойманы. Или поймано лишнее.','Some motorcycles got away. Or you caught something extra.'),
   winMsg:()=>t('Поймали. Мотоциклы подали жалобу.','Caught them. The motorcycles filed a complaint.')
 },
-{ // 7. вверх ногами
+{ // 6. вверх ногами
   time:22,hint:()=>t('Поверните голову. Или телефон.','Tilt your head. Or your phone.'),
   setup(){setHead(PICK(),t('светофоры','traffic lights'),t('Камеру уронили. Извините.','Someone dropped the camera. Sorry.'));
     const c=deal(9,P.light,3,[P.misc,P.road,P.bike]);c.forEach(x=>{x.flip=false;x.rot=rnd([90,180,270]);if(Math.random()<.35)x.spin=5+Math.random()*5});build(3,c)},
   failMsg:()=>t('Вверх ногами светофор всё ещё светофор.','Upside down, a traffic light is still a traffic light.'),
   winMsg:()=>t('Голова не закружилась? Отлично.','Not dizzy yet? Good.')
 },
-{ // 8. загрузка на 2G
+{ // 7. загрузка на 2G
   time:20,hint:()=>t('Можно ждать, пока прогрузится. Но бонус за скорость тает.','You can wait for it to load. But the speed bonus melts.'),
   setup(){setHead(PICK(),t('собаки','dogs'),t('Изображения загружаются на скорости 2G.','Images are loading at 2G speed.'));
     build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>shuffle([...P[k]]).slice(0,3).map(s=>ph(s,k==='dog',{kind:k})))));
@@ -400,7 +388,7 @@ const LEVELS=[
   failMsg:()=>t('Это была не собака. Это было размытое пятно.','That was not a dog. That was a blurry blob.'),
   winMsg:()=>t('Узнали собаку по силуэту. Сильно.','Recognized a dog by its silhouette. Impressive.')
 },
-{ // 9. задание меняется
+{ // 8. задание меняется
   time:30,hint:()=>t('Смотрите на заголовок. Он живёт своей жизнью.','Watch the header. It has a mind of its own.'),
   setup(){S.W=[[()=>t('кошки','cats'),'cat'],[()=>t('собаки','dogs'),'dog'],[()=>t('утки','ducks'),'duck']];S.wi=0;S.acc=0;
     setHead(PICK(),S.W[0][0](),t('Задание может обновиться без предупреждения.','The task may change without notice.'));
@@ -411,7 +399,7 @@ const LEVELS=[
   verify(){const cur=S.W[S.wi][1];const w=wrongTiles(x=>x.c.kind===cur);
     if(!w.length)win(t('Вы успели до следующей смены настроения.','You made it before our next mood swing.'));else fail(t('Пока вы выбирали, задание поменялось. Бывает.','The task changed while you were choosing. It happens.'))}
 },
-{ // 10. память
+{ // 9. память
   time:20,hint:()=>t('Велосипеды никуда не делись, просто накрыты.','The bicycles did not go anywhere. They are just covered.'),
   setup(){setHead(t('Запомните, где','Remember where the'),t('велосипеды','bicycles are'),t('Сейчас мы их спрячем.','We are about to hide them.'));
     build(3,deal(9,P.bike,3,[P.moto,P.misc]));S.pause=1;goBtn.disabled=true;say(t('Запоминайте…','Memorize…'));
@@ -421,14 +409,14 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.src.includes('moto'))?t('Это мотоцикл. Под рубашкой не видно, понимаем.','That is a motorcycle. Hard to tell under a cover, we get it.'):t('Память подвела. Ещё раз.','Memory failed you. Try again.'),
   winMsg:()=>t('Глаз как у ястреба. У человеческого ястреба.','Eyes like a hawk. A human hawk.')
 },
-{ // 11. кот на рынке (hidden object)
+{ // 10. кот на рынке (hidden object)
 ...HO({n:5,img:'img/market.jpg',R:{x:.128,y:.785,w:.104,h:.073},time:30,
   hint:()=>t('Котики любят прятаться внизу, под ящиками.','Cats like to hide low, under the crates.'),
   word:()=>t('кот','a cat'),sub:()=>t('Он один. И он не хочет, чтобы его нашли.','There is only one. And he does not want to be found.'),
   win:()=>t('Нашёлся! Кот недоволен, но ему всё равно.','Found him! The cat is unimpressed.'),
   extra:()=>t('Кот там, да. Но в остальных квадратах только овощи.','Yes, the cat is there. But the other squares are just vegetables.'),
   miss:()=>t('Кот был в подсвеченном квадрате. Запомните его.','The cat was in the highlighted square. Remember him.')})},
-{ // 12. фонарик
+{ // 11. фонарик
   time:25,hint:()=>t('Водите курсором или пальцем по капче — это фонарик.','Move your cursor or finger over the captcha — it is a flashlight.'),
   setup(){setHead(t('Свет отключили. Найдите все','The power is out. Find all'),t('пожарные гидранты','fire hydrants'),t('Водите курсором или пальцем — это фонарик.','Move your cursor or finger — it is a flashlight.'));
     build(3,deal(9,P.hyd,3,[P.misc,P.bike,P.road]));const d=div('dark');board.append(d);
@@ -438,7 +426,7 @@ const LEVELS=[
   failMsg:()=>t('В темноте все гидранты серые. Попробуйте ещё.','In the dark all hydrants look grey. Try again.'),
   winMsg:()=>t('Нашли все. Можно работать электриком.','Found them all. You could be an electrician.')
 },
-{ // 13. погоня
+{ // 12. погоня
   time:25,goLabel:()=>t('Ловите','Catch it'),hint:()=>t('Жмите на квадрат, где скутер сейчас, а не где он был.','Tap the square where the scooter is now, not where it was.'),
   setup(){setHead(t('Нажмите на квадрат, где сейчас','Tap the square with the'),t('скутер','scooter'),t('Три раза. Он не будет стоять на месте.','Three times. It will not sit still.'));
     build(4,null,{scene:'img/road.jpg'});
@@ -451,19 +439,19 @@ const LEVELS=[
     m.el.style.left=m.x/n*100+'%';m.el.style.top=m.y/n*100+'%';m.el.style.transform=`translate(-50%,-50%) rotate(${ang}deg)`},
   click(x){const m=S.m,cell=Math.min(n-1,Math.floor(m.y))*n+Math.min(n-1,Math.floor(m.x));
     x.el.classList.remove('hit','miss');void x.el.offsetWidth;
-    if(x.cell===cell){S.hits++;x.el.classList.add('hit');m.sp*=1.4;m.vx=(Math.random()<.5?-1:1)*1.6;m.vy=(Math.random()-.5)*2.4;
+    if(x.cell===cell){S.hits++;x.el.classList.add('hit');m.sp*=1.25;m.vx=(Math.random()<.5?-1:1)*1.6;m.vy=(Math.random()-.5)*2.4;
       if(S.hits>=3)win(t('Пойман. Скутер подал апелляцию.','Caught. The scooter is filing an appeal.'));else say(t(`Есть! ${S.hits} из 3. Он разозлился.`,`Got it! ${S.hits} of 3. Now it is angry.`),'ok')}
     else{sus++;score=Math.max(0,score-10);bump();x.el.classList.add('miss');say(rnd(t(['Мимо. Он был в соседнем.','Он уже уехал.','Почти.','Это асфальт.'],['Missed. It was next door.','It already left.','Almost.','That is asphalt.'])))}
     return true}
 },
-{ // 14. робот в толпе (hidden object)
+{ // 13. робот в толпе (hidden object)
 ...HO({n:6,img:'img/crowd.jpg',R:{x:.683,y:.488,w:.112,h:.224},time:30,
   hint:()=>t('Ищите того, кто не промок под дождём.','Look for the one who is not getting wet.'),
   word:()=>t('робот','a robot'),sub:()=>t('Кроме вас. Он один, и он прикидывается человеком.','Besides you. There is one, pretending to be human.'),
   win:()=>t('Попался. Говорит, что просто вышел за хлебом.','Busted. He says he just went out for bread.'),
   extra:()=>t('Робот найден, но вы отметили и людей. Они обиделись.','Robot found, but you also marked people. They are offended.'),
   miss:()=>t('Робот был там, где подсвечено. Он хорошо маскируется.','The robot was in the highlighted squares. Good disguise.')})},
-{ // 15. карусель
+{ // 14. карусель
   time:25,hint:()=>t('Капча крутится, а квадраты нажимаются как обычно.','The captcha spins, but the squares click as usual.'),
   setup(){setHead(PICK(),t('кошки','cats'),t('Капча немного закружилась.','The captcha got a little dizzy.'));
     build(3,shuffle([['cat'],['dog'],['duck']].flatMap(([k])=>shuffle([...P[k]]).slice(0,3).map(s=>ph(s,k==='cat',{kind:k})))));S.ang=0;S.vs=28;board.classList.add('spinning')},
@@ -471,7 +459,7 @@ const LEVELS=[
   failMsg:()=>t('Голова закружилась? Это не кошка.','Dizzy? That is not a cat.'),
   winMsg:()=>t('Все кошки пойманы на лету.','All cats caught mid-spin.')
 },
-{ // 16. роботы: ловим людей
+{ // 15. роботы: ловим людей
   time:22,goLabel:()=>t('Ловите','Catch them'),
   hint:()=>t('Жмите на квадрат, пока в нём человек. Робот в куртке не считается.','Tap a square while a person is in it. A robot in a jacket does not count.'),
   setup(){setHead(PICK(),t('люди','people'),t('Они появляются на секунду. Поймайте троих.','They show up for a second. Catch three.'));
@@ -491,7 +479,7 @@ const LEVELS=[
     return true},
   verify(){say(t('Сначала поймайте троих.','Catch three first.'))}
 },
-{ // 17. свет гаснет: по памяти в темноте
+{ // 16. свет гаснет: по памяти в темноте
   time:25,hint:()=>t('Запоминайте, где велосипеды, пока горит свет. Потом жмите в темноту.','Memorize where the bicycles are while the light is on. Then tap the darkness.'),
   setup(){setHead(t('Запомните, где','Remember where the'),t('велосипеды','bicycles are'),t('Свет сейчас погаснет.','The light is about to go out.'));
     build(4,deal(16,P.bike,4,[P.moto,P.misc]));S.pause=1;goBtn.disabled=true;board.classList.add('fading');say(t('Запоминайте…','Memorize…'));
@@ -501,7 +489,7 @@ const LEVELS=[
   failMsg:()=>t('В темноте все велосипеды похожи на мотоциклы.','In the dark every bicycle looks like a motorcycle.'),
   winMsg:()=>t('Нашли наощупь. Почти как летучая мышь.','Found them by feel. Almost like a bat.')
 },
-{ // 18. обвал
+{ // 17. обвал
   time:25,hint:()=>t('Отмеченные квадраты не падают. Спасайте уток первыми.','Selected squares do not fall. Save the ducks first.'),
   setup(){setHead(PICK(),t('утки','ducks'),t('Капча разваливается. Отмеченное не упадёт.','The captcha is falling apart. Selected squares stay.'));
     const dc=deal(9,P.duck,3,[P.cat,P.dog,P.misc]);dc[dc.findIndex(x=>!x.target)]=ph(P.rubber[0]);build(3,shuffle(dc));S.acc=-1.2;S.gap=1.25},
@@ -513,14 +501,14 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.src===P.rubber[0])?t('Резиновая утка — не утка. Она даже не крякает.','A rubber duck is not a duck. It does not even quack.'):t('Спасли что-то не то.','You saved the wrong thing.'),
   winMsg:()=>t('Утки спасены. Остальное не жалко.','Ducks saved. Nobody will miss the rest.')
 },
-{ // 19. утка на пляже (hidden object)
+{ // 18. утка на пляже (hidden object)
 ...HO({n:6,img:'img/beach.jpg',R:{x:.473,y:.462,w:.075,h:.073},time:35,
   hint:()=>t('Утка стоит, а не загорает. И она на нескольких квадратах.','The duck is standing, not sunbathing. And it covers several squares.'),
   word:()=>t('утка','a duck'),sub:()=>t('Да, на пляже. Не спрашивайте.','Yes, on the beach. Do not ask.'),
   win:()=>t('Утка найдена. Она просто пришла позагорать.','Duck found. It just came to get a tan.'),
   extra:()=>t('Утку нашли, но лишние квадраты — это просто полотенца.','Duck found, but the extra squares are just towels.'),
   miss:()=>t('Утка попала сразу на несколько квадратов. Они подсвечены.','The duck covers several squares. They are highlighted.')})},
-{ // 20. муравьи: ползают по траве
+{ // 19. муравьи: ползают по траве
   time:30,hint:()=>t('Ищите то, что шевелится. Муравьёв двое, божьи коровки не в счёт.','Look for what moves. There are two ants; ladybugs do not count.'),
   setup(){setHead(PICKSQ(),t('муравьи','ants'),t('Их двое, и они ползают. Божьи коровки не считаются.','There are two, and they crawl. Ladybugs do not count.'));
     build(5,null,{scene:'img/grass.jpg'});
@@ -541,19 +529,19 @@ const LEVELS=[
     fail(extra?t(`Лишний квадрат. Муравьи были там, где подсвечено.`,`Extra square selected. The ants were in the highlighted squares.`)
       :t(`Найдено ${found} из 2. Остальные подсвечены.`,`Found ${found} of 2. The rest are highlighted.`))}
 },
-{ // 21. сурикаты: один чуть меньше
-...ODD({n:5,img:'img/meerkat.jpg',base:122,odd:113,pos:'50% 54%',time:30,
+{ // 20. сурикаты: один чуть меньше
+...ODD({n:5,img:'img/meerkat.jpg',base:122,odd:100,pos:'50% 54%',time:30,
   pre:()=>t('Выберите самого маленького','Select the smallest'),word:()=>t('суриката','meerkat'),sub:()=>t('Они стоят на посту. Один — стажёр.','They are on duty. One is an intern.'),
   hint:()=>t('Сравнивайте голову суриката с краем квадрата.','Compare the meerkat head with the edge of the square.'),
   win:()=>t('Стажёр найден. Его отправили домой расти.','Intern found. He was sent home to grow.'),
   fail:()=>t('Самый маленький — в подсвеченном квадрате. Он очень старался.','The smallest one is highlighted. He tried his best.')})},
-{ // 22. стог сена
+{ // 21. стог сена
   time:30,hint:()=>t('Иголка точно где-то там. Наверное.','The needle is definitely in there. Probably.'),
   setup(){setHead(PICKSQ(),t('иголка','a needle'),t('Она точно там есть. Выберите все квадраты с ней.','It is definitely in there. Select every square with it.'));build(8,null,{scene:'img/hay.jpg'})},
   click(x){setSel(x,true);win(t('Мы не настолько жестокие.','We are not that cruel.'));return true},
   verify(){say(t('Ткните в стог. Хоть куда-нибудь.','Poke the haystack. Anywhere.'))}
 },
-{ // 23. финал
+{ // 22. финал
   time:40,hint:()=>t('Галочка убегает не вечно. А потом — люди иногда ошибаются.','The checkbox cannot run forever. And then: humans make mistakes.'),
   setup(){S.phaseA=1;S.esc=6;S.lastJ=0;board.hidden=true;run.hidden=false;rbox.classList.remove('spin','done');
     setHead(t('Последний шаг. Отметьте','Last step. Check'),t('«Я не робот»','"I\'m not a robot"'),t('Просто нажмите на галочку.','Just click the checkbox.'));goBtn.disabled=true;
