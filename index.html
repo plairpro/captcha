@@ -95,6 +95,8 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);lin
 .tile.win{box-shadow:0 0 0 2px #fff}
 .tile.win.sel{box-shadow:0 0 0 2px #fff,inset 0 0 0 7px #fff}
 .tile.hit{animation:hit .5s}
+.tile.win.reveal{box-shadow:0 0 0 2px #fff,inset 0 0 0 5px #34c759;animation:reveal .6s 3}
+@keyframes reveal{50%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9px #34c759}}
 @keyframes hit{0%,60%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9999px #1e8e3e66}100%{box-shadow:0 0 0 2px #fff}}
 .tile.miss{animation:miss .4s}
 @keyframes miss{0%,60%{box-shadow:0 0 0 2px #fff,inset 0 0 0 9999px #d9302555}}
@@ -397,15 +399,26 @@ const LEVELS=[
     return true},
   verify(){say(t('Сначала поймайте троих.','Catch three first.'))}
 },
-{ // 9. муравьи
-  time:25,hint:()=>t('Их ровно два. Божьи коровки не считаются.','There are exactly two. Ladybugs do not count.'),
-  setup(){setHead(PICKSQ(),t('муравьи','ants'),SKIP());build(6,null,{scene:'img/grass.jpg'});
-    const cells=shuffle([...Array(36).keys()]);S.ants=new Set(cells.slice(0,2));
-    const put=(cell,src,size)=>{const r=Math.floor(cell/6),c=cell%6;sprite(src,c+.25+Math.random()*.5,r+.25+Math.random()*.5,size,Math.random()*360)};
-    cells.slice(0,2).forEach(c=>put(c,'img/ant.png',.34));cells.slice(2,5).forEach(c=>put(c,'img/bug.png',.3));
+{ // 9. муравьи: ползают по траве
+  time:30,hint:()=>t('Ищите то, что шевелится. Муравьёв двое, божьи коровки не в счёт.','Look for what moves. There are two ants; ladybugs do not count.'),
+  setup(){setHead(PICKSQ(),t('муравьи','ants'),t('Их двое, и они ползают. Божьи коровки не считаются.','There are two, and they crawl. Ladybugs do not count.'));
+    build(5,null,{scene:'img/grass.jpg'});
+    const cells=shuffle([...Array(25).keys()]);S.ants=new Set(cells.slice(0,2));S.crawl=[];
+    const put=(cell,src,size,mv)=>{const r=Math.floor(cell/5),c=cell%5,b={x0:c+.28,x1:c+.72,y0:r+.28,y1:r+.72};
+      const o={x:c+.3+Math.random()*.4,y:r+.3+Math.random()*.4,a:Math.random()*Math.PI*2,sp:mv,b,size};
+      o.el=sprite(src,o.x,o.y,size,o.a*180/Math.PI+90);S.crawl.push(o)};
+    cells.slice(0,2).forEach(c=>put(c,'img/ant.png',.46,.22));cells.slice(2,5).forEach(c=>put(c,'img/bug.png',.38,.05));
     tiles.forEach(x=>x.c={target:S.ants.has(x.cell)})},
-  failMsg:()=>t('Муравьёв два. Мы считали с лупой.','There are two ants. We counted with a magnifier.'),
-  winMsg:()=>t('Зрение 100%. Можно в снайперы.','Perfect eyesight. Sniper material.')
+  tick(dt){for(const o of S.crawl){if(!o.sp)continue;o.a+=(Math.random()-.5)*4*dt;
+    let nx=o.x+Math.cos(o.a)*o.sp*dt,ny=o.y+Math.sin(o.a)*o.sp*dt;
+    if(nx<o.b.x0||nx>o.b.x1){o.a=Math.PI-o.a;nx=Math.max(o.b.x0,Math.min(o.b.x1,nx))}
+    if(ny<o.b.y0||ny>o.b.y1){o.a=-o.a;ny=Math.max(o.b.y0,Math.min(o.b.y1,ny))}
+    o.x=nx;o.y=ny;Object.assign(o.el.style,{left:o.x/n*100+'%',top:o.y/n*100+'%',transform:`translate(-50%,-50%) rotate(${o.a*180/Math.PI+90}deg)`})}},
+  verify(){const w=wrongTiles();if(!w.length)return win(t('Оба муравья найдены. Зрение как у муравьеда.','Both ants found. Eyes like an anteater.'));
+    const found=tiles.filter(x=>x.sel&&x.c.target).length,extra=tiles.filter(x=>x.sel&&!x.c.target).length;
+    tiles.forEach(x=>{if(x.c.target)x.el.classList.add('reveal')});
+    fail(extra?t(`Лишний квадрат. Муравьи были там, где подсвечено.`,`Extra square selected. The ants were in the highlighted squares.`)
+      :t(`Найдено ${found} из 2. Остальные подсвечены.`,`Found ${found} of 2. The rest are highlighted.`))}
 },
 { // 10. финал
   time:40,hint:()=>t('Галочка убегает не вечно. А потом — люди иногда ошибаются.','The checkbox cannot run forever. And then: humans make mistakes.'),
