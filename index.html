@@ -1,4 +1,4 @@
-<title>Я не робот</title>
+<title>Captcha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="plair-verify" content="plair-f5c067704585">
 <script src="https://plair.pro/sdk.js"></script>
@@ -184,7 +184,7 @@ try{lang=localStorage.getItem('nr-lang')||((navigator.language||'').toLowerCase(
 const t=(ru,en)=>lang==='en'?en:ru;
 function applyStatic(){
   document.documentElement.lang=lang;
-  document.title=t('Я не робот',"I'm Not a Robot");
+  document.title="Captcha";
   $('#sLbl').textContent=$('#rLbl').textContent=t('Я не робот',"I'm not a robot");
   $('#brand').textContent=t('капча-ли','captcha-ish');
   $('#legal').textContent=t('Конфиденциальность · Условия','Privacy · Terms');
