@@ -243,7 +243,7 @@ const P={
   duck:[...range('ani',[6,7,8]),...range('anA',[6,7,8]),...range('anB',[6,8])], rubber:['img/anB7.jpg'],
   robot:range('robot',[1,2,3,4,5,6,7]), ppl:range('ppl',[0,1,2,3,4,5,6,7,8])
 };
-[...Object.values(P).flat(),'img/road.jpg','img/grass.jpg','img/market.jpg','img/crowd.jpg','img/beach.jpg','img/capy.jpg','img/meerkat.jpg','img/hay.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
+[...Object.values(P).flat(),'img/road.jpg','img/grass.jpg','img/market.jpg','img/crowd.jpg','img/beach.jpg','img/gold.jpg','img/meerkat.jpg','img/hay.jpg','img/scooter.png','img/ant.png','img/bug.png'].forEach(s=>{const i=new Image();i.src=s});
 
 let tiles=[],n=3,level=0,L=null,S={timers:[]},timeLeft=1,timeMax=1,running=false,locked=false,ended=false;
 let mistakes=0,sus=0,tStart=0,score=0,levelFails=0,stat={base:0,speed:0,clean:0},secs=0,reported=false;
@@ -354,12 +354,12 @@ const LEVELS=[
   failMsg:w=>w.some(x=>x.c.target)?t('Там ещё гидрант. Он только что появился, мы знаем.','There is another hydrant. It just appeared, we know.'):t('Выбрано что-то, из чего не тушат пожары.','You picked something that does not put out fires.'),
   winMsg:()=>t('Все гидранты найдены. Район в безопасности.','All hydrants found. The neighborhood is safe.')
 },
-{ // 4. капибары: одна чуть больше
-...ODD({n:4,img:'img/capy.jpg',base:100,odd:124,pos:'46% 56%',time:25,
-  pre:()=>t('Выберите самую крупную','Select the biggest'),word:()=>t('капибару','capybara'),sub:()=>t('Они одинаковые. Почти.','They are identical. Almost.'),
-  hint:()=>t('Одна капибара плотнее пообедала. Сравните, как она заполняет квадрат.','One capybara had a bigger lunch. Compare how much of the square it fills.'),
-  win:()=>t('Верно. Она просто пушистее, не обсуждаем.','Correct. She is just fluffier, let us not discuss it.'),
-  fail:()=>t('Самая крупная — в подсвеченном квадрате. Она теперь обижена.','The biggest one is highlighted. Now she is offended.')})},
+{ // 4. золото: один самородок крупнее
+...ODD({n:4,img:'img/gold.jpg',base:100,odd:124,pos:'51% 47%',time:25,
+  pre:()=>t('Выберите самый крупный','Select the biggest'),word:()=>t('самородок','gold nugget'),sub:()=>t('Они одинаковые. Почти.','They are identical. Almost.'),
+  hint:()=>t('Один самородок тяжелее остальных. Сравните, сколько места он занимает в квадрате.','One nugget is heavier. Compare how much of the square it fills.'),
+  win:()=>t('Ваш. Шутка, это капча, золото остаётся у нас.','It is yours. Just kidding, this is a captcha, we keep the gold.'),
+  fail:()=>t('Самый крупный — в подсвеченном квадрате. Вы взяли пирит.','The biggest one is highlighted. You took fool\'s gold.')})},
 { // 5. мотоцикл уезжает
   time:25,hint:()=>t('Мотоциклы не любят, когда на них показывают пальцем. Но они устают.','Motorcycles hate being pointed at. But they get tired.'),
   setup(){setHead(PICK(),t('мотоциклы','motorcycles'),SKIP());
